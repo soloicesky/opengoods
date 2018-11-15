@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"mabis/opensource/opengoods/config"
+	"mabis/opensource/opengoods/entity"
+	"reflect"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -56,5 +58,51 @@ func (dbctx *DbContext) Save(v interface{}) error {
 
 	dbctx.Db = dbctx.Db.Create(v)
 	dbctx.Db = dbctx.Db.Commit()
-	return nil
+	err := dbctx.Db.Error
+	return err
+}
+
+/*Delete delete a item to database
+param: interface{} object to delete
+*/
+func (dbctx *DbContext) Delete(v interface{}) error {
+	if nil == v {
+		return errors.New("parameter null pointer")
+	}
+
+	dbctx.Db = dbctx.Db.Delete(v)
+	dbctx.Db = dbctx.Db.Commit()
+	err := dbctx.Db.Error
+	return err
+}
+
+/*Query Query specify items from database
+param: interface{} where clause
+param:pageno  no of current page
+param:pagesize size of each page
+return slice of objects and error when error is nil query success, others fail
+*/
+func (dbctx *DbContext) Query(where interface{}, pageno int, pagesize int) (interface{}, error) {
+	if nil == where {
+		return nil, errors.New("parameter null pointer")
+	}
+
+	var clist interface{}
+	var err error
+	fmt.Println("where type name: ", reflect.TypeOf(where), ">>", reflect.TypeOf(where).Name())
+
+	switch reflect.TypeOf(where).Name() {
+	case "Category":
+		clist = make([]entity.Category, 0)
+		err = dbctx.Db.Where(where).Offset(pageno * pagesize).Limit(pagesize).Find(clist).Error
+	case "Goods":
+		clist = make([]entity.Goods, 0)
+		err = dbctx.Db.Where(where).Offset(pageno * pagesize).Limit(pagesize).Find(clist).Error
+
+	case "Origin":
+		clist = make([]entity.Origin, 0)
+		err = dbctx.Db.Where(where).Offset(pageno * pagesize).Limit(pagesize).Find(clist).Error
+	}
+
+	return clist, err
 }
